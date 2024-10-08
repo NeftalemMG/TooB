@@ -1,25 +1,36 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-
-// Loading environment variables
+import dotenv from 'dotenv';
 dotenv.config();
 
-// Connecting to the Database
-connectDB();
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import { router as authRoutes } from './routes/authRoute.js';
+import { router as productRoutes } from './routes/productRoute.js';
+import { router as cartRoutes } from './routes/cartRoutes.js';
+import { router as couponRoutes } from './routes/couponRoute.js';
+import { router as paymentRoutes } from './routes/paymentRoute.js';
+
+import { connectDB } from './lib/db.js';
+
+dotenv.config();
 
 const app = express();
+const port = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
 
-// Routes
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/products', require('./routes/productRoutes'));
-app.use('/api/orders', require('./routes/orderRoutes'));
+// Authentication endpoints
+app.use(express.json({ limit: "10mb"}));
+app.use(cookieParser());
 
-const PORT = process.env.PORT || 5000;
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/coupon', couponRoutes);
+app.use('/api/payment', paymentRoutes);
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+app.listen(port, () => {
+    console.log(`Server listending on port http://localhost:${port}`);
+
+    connectDB();
+})
