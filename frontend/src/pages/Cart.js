@@ -1,100 +1,131 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trash2, Plus, Minus } from 'lucide-react';
-// import { Button } from '@/components/ui/button';
-import Button from '../components/ui/Button';
+import { ShoppingBag, X, Plus, Minus } from 'lucide-react';
+import axios from '../api/axios';
 
 const Cart = () => {
-  const [cartItems, setCartItems] = useState([
-    { id: 1, name: 'Ethereal Blue Coat', price: 2999.99, quantity: 1, image: require('../images/blueCoat.jpg') },
-    { id: 2, name: 'Timeless Brown Shirt', price: 899.99, quantity: 2, image: require('../images/brownShirt.jpg') },
-    { id: 3, name: 'Emerald Dream Dress', price: 4999.99, quantity: 1, image: require('../images/NexelaDress.jpg') },
-  ]);
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const updateQuantity = (id, change) => {
-    setCartItems(cartItems.map(item => 
-      item.id === id ? { ...item, quantity: Math.max(0, item.quantity + change) } : item
-    ).filter(item => item.quantity > 0));
+  useEffect(() => {
+    fetchCart();
+  }, []);
+
+  const fetchCart = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/cart');
+      setCart(response.data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch cart. Please try again.');
+      console.error('Error fetching cart:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const removeItem = (id) => {
-    setCartItems(cartItems.filter(item => item.id !== id));
+  const updateQuantity = async (productId, newQuantity) => {
+    try {
+      await axios.put(`/cart/${productId}`, { quantity: newQuantity });
+      fetchCart(); // Refetch cart after update
+    } catch (err) {
+      setError('Failed to update quantity. Please try again.');
+      console.error('Error updating quantity:', err);
+    }
   };
 
-  const totalPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const removeFromCart = async (productId) => {
+    try {
+      await axios.delete(`/cart/${productId}`);
+      fetchCart(); // Refetch cart after removal
+    } catch (err) {
+      setError('Failed to remove item. Please try again.');
+      console.error('Error removing item:', err);
+    }
+  };
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-sand-50">
+      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-earth-900"></div>
+    </div>;
+  }
+
+  if (error) {
+    return <div className="min-h-screen flex items-center justify-center bg-sand-50">
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong className="font-bold">Error!</strong>
+        <span className="block sm:inline"> {error}</span>
+      </div>
+    </div>;
+  }
+
+  if (cart.length === 0) {
+    return <div className="min-h-screen flex flex-col items-center justify-center bg-sand-50">
+      <ShoppingBag className="w-24 h-24 text-earth-400 mb-4" />
+      <h2 className="text-2xl font-bold text-earth-900 mb-4">Your cart is empty</h2>
+      <p className="text-earth-600 mb-8">Looks like you haven't added any items to your cart yet.</p>
+      <Link
+        to="/collections"
+        className="bg-terracotta-500 text-white px-6 py-3 rounded-full hover:bg-terracotta-600 transition-colors duration-300"
+      >
+        Continue Shopping
+      </Link>
+    </div>;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <header className="bg-white shadow-md py-4">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Your Cart</h1>
-          <Link to="/">
-            <img src={require('../images/toobLogo.png')} alt="TOOB Logo" className="h-12" />
+    <div className="min-h-screen bg-sand-50 py-12">
+      <div className="container mx-auto px-4">
+        <h1 className="text-3xl font-bold text-earth-900 mb-8">Your Cart</h1>
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          {cart.map((item) => (
+            <div key={item._id} className="flex items-center py-6 border-b border-earth-200 last:border-b-0">
+              <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded-md mr-6" />
+              <div className="flex-grow">
+                <h3 className="text-lg font-semibold text-earth-900">{item.name}</h3>
+                <p className="text-earth-600">${item.price.toFixed(2)}</p>
+              </div>
+              <div className="flex items-center">
+                <button
+                  onClick={() => updateQuantity(item._id, Math.max(1, item.quantity - 1))}
+                  className="p-2 rounded-full bg-earth-200 text-earth-600 hover:bg-earth-300"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="mx-4 text-earth-900">{item.quantity}</span>
+                <button
+                  onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                  className="p-2 rounded-full bg-earth-200 text-earth-600 hover:bg-earth-300"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              <button
+                onClick={() => removeFromCart(item._id)}
+                className="ml-6 p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-lg font-semibold text-earth-900">Total:</span>
+            <span className="text-2xl font-bold text-terracotta-600">
+              ${cart.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}
+            </span>
+          </div>
+          <Link
+            to="/checkout"
+            className="block w-full bg-terracotta-500 text-white py-3 rounded-full hover:bg-terracotta-600 transition-colors duration-300 text-center"
+          >
+            Proceed to Checkout
           </Link>
         </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        {cartItems.length === 0 ? (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
-            <p className="mb-8">Looks like you haven't added any items to your cart yet.</p>
-            <Link to="/collections">
-              <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700">
-                Continue Shopping
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <>
-            <div className="mb-8">
-              {cartItems.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  className="flex items-center bg-white p-4 rounded-lg shadow-md mb-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded-md mr-4" />
-                  <div className="flex-grow">
-                    <h3 className="text-lg font-bold">{item.name}</h3>
-                    <p className="text-gray-600">${item.price.toFixed(2)}</p>
-                  </div>
-                  <div className="flex items-center">
-                    <Button variant="outline" size="sm" onClick={() => updateQuantity(item.id, -1)}>
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="mx-2 font-bold">{item.quantity}</span>
-                    <Button variant="outline" size="sm" onClick={() => updateQuantity(item.id, 1)}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Button variant="ghost" className="ml-4" onClick={() => removeItem(item.id)}>
-                    <Trash2 className="h-5 w-5 text-red-500" />
-                  </Button>
-                </motion.div>
-              ))}
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Total</h3>
-                <p className="text-2xl font-bold">${totalPrice.toFixed(2)}</p>
-              </div>
-              <Button size="lg" className="w-full bg-blue-600 text-white hover:bg-blue-700">
-                Proceed to Checkout
-              </Button>
-            </div>
-          </>
-        )}
-      </main>
-
-      <footer className="bg-gray-900 text-white py-8 mt-12">
-        <div className="container mx-auto px-4 text-center">
-          <p>&copy; 2024 TOOB Luxury. All rights reserved.</p>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 };

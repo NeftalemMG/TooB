@@ -141,3 +141,19 @@ async function createNewCoupon(userId) {
 
 	return newCoupon;
 }
+
+export const getOrderDetails = async (req, res) => {
+    try {
+        const { session_id } = req.query;
+        const order = await Order.findOne({ stripeSessionId: session_id }).populate('products.product');
+
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        res.json(order);
+    } catch (error) {
+        console.error("Error fetching order details:", error);
+        res.status(500).json({ message: "Error fetching order details", error: error.message });
+    }
+};

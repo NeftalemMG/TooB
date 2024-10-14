@@ -1,13 +1,27 @@
 {
   "files": {
-    "main.css": "/static/css/main.d7db9475.css",
-    "main.js": "/static/js/main.45c11a99.js",
+    "main.css": "/static/css/main.8bedee7a.css",
+    "main.js": "/static/js/main.41e798ac.js",
+    "static/media/Making Threads 2.png": "/static/media/Making Threads 2.4b7cf486ee23f795e64d.png",
+    "static/media/Making The Clothes.png": "/static/media/Making The Clothes.bb41b8bdd5d29547d22f.png",
+    "static/media/GreenGrayKimonoJacket.png": "/static/media/GreenGrayKimonoJacket.e93d6ebe356ec01ee9fd.png",
+    "static/media/GreenTotemBag.png": "/static/media/GreenTotemBag.d967046818141b16776f.png",
+    "static/media/HandmadeLeatherBags.png": "/static/media/HandmadeLeatherBags.a0c602adcdd554c27db1.png",
+    "static/media/toobLogo.png": "/static/media/toobLogo.3b454074e18c55b6475e.png",
+    "static/media/MKTNG 6.jpg": "/static/media/MKTNG 6.695d5806ebf32c9b94c7.jpg",
+    "static/media/MKTNG 4.jpg": "/static/media/MKTNG 4.8716245e6d804c9cad72.jpg",
+    "static/media/GreenEdiatShoes.jpeg": "/static/media/GreenEdiatShoes.4c0a93b95e961cf5737e.jpeg",
+    "static/media/MKTNG 8.jpg": "/static/media/MKTNG 8.8d71fb00374aa98626a7.jpg",
+    "static/media/MKTNG 5.jpg": "/static/media/MKTNG 5.3336d08fc07855a98c42.jpg",
+    "static/media/BlandHalfFull.jpeg": "/static/media/BlandHalfFull.6cb45a9688945a04dab7.jpeg",
+    "static/media/GreenGoldScarg.jpeg": "/static/media/GreenGoldScarg.b6b2c45b6e76b70ade00.jpeg",
+    "static/media/ZastraToteBag.jpg": "/static/media/ZastraToteBag.58823c3fe37e6230e8ae.jpg",
     "index.html": "/index.html",
-    "main.d7db9475.css.map": "/static/css/main.d7db9475.css.map",
-    "main.45c11a99.js.map": "/static/js/main.45c11a99.js.map"
+    "main.8bedee7a.css.map": "/static/css/main.8bedee7a.css.map",
+    "main.41e798ac.js.map": "/static/js/main.41e798ac.js.map"
   },
   "entrypoints": [
-    "static/css/main.d7db9475.css",
-    "static/js/main.45c11a99.js"
+    "static/css/main.8bedee7a.css",
+    "static/js/main.41e798ac.js"
   ]
 }

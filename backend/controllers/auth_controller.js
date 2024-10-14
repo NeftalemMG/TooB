@@ -64,29 +64,33 @@ export const signup = async(req, res) => {
 }
 
 export const login = async (req, res) => {
-	try {
-		const { email, password } = req.body;
-
-		const user = await User.findOne({ email });
-		if (user && (await user.comparePass(password))) {
-			const { accessToken, refreshToken } = generateTokens(user._id);
-			await storeRefreshToken(user._id, refreshToken);
-			setCookies(res, accessToken, refreshToken);
-
-			res.json({
-				_id: user._id,
-				name: user.name,
-				email: user.email,
-				role: user.role,
-			});
-		} else {
-			res.status(400).json({ message: "Invalid email or password" });
-		}
-	} catch (error) { 
-		console.log("Error in login controller", error.message);
-		res.status(500).json({ message: error.message });
-	}
-};
+    const { email, password } = req.body;
+  
+    try {
+      const user = await User.findOne({ email });
+      if (user && await user.comparePassword(password)) {
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+          expiresIn: '1d'
+        });
+  
+        res.cookie('jwt', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 24 * 60 * 60 * 1000 // 1 day
+        });
+  
+        res.json({
+          _id: user._id,
+          name: user.name,
+          email: user.email
+        });
+      } else {
+        res.status(401).json({ message: 'Invalid email or password' });
+      }
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+}
 
 export const logout = async(req, res) => {
     try {
@@ -135,6 +139,7 @@ export const refreshToken = async(req, res) => {
 		res.status(500).json({ message: "Server error", error: error.message });
 	}
 }
+
 
 
 // implement getprofile

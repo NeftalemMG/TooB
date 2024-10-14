@@ -1,62 +1,70 @@
 import { redis } from '../lib/redis.js';
 import Product from '../models/productModel.js';
+import uploadImage from '../utils/uploadImage.js';
 import cloudinary from '../lib/cloudinary.js';
 
 
 export const getAllProducts = async (req, res) => {
     try {
         const products = await Product.find({});
-        res.json({ products });
+        res.json(products || []); // Ensure we always send an array
     } catch (error) {
         console.log(`Error: ${error}`);
         res.status(500).json({ message: "Server Error", error: error.message })
     }
 };
 
+
 export const getFeaturedProducts = async (req, res) => {
     try {
-        let isFeatRedisOrDb = await redis.get("featured_products");
-        if (isFeatRedis) {
-            return res.json(JSON.parse(isFeatRedis));
+        let featuredProducts = await redis.get("featured_products");
+        if (featuredProducts) {
+            return res.json(JSON.parse(featuredProducts));
         }
 
-        isFeatRedisOrDb = await Product.find({ isFeatured:true}).lean();
-        if (!isFeatRedisOrDb) {
+        featuredProducts = await Product.find({ isFeatured: true }).lean();
+        if (!featuredProducts || featuredProducts.length === 0) {
             return res.status(404).json({ message: "No featured products found" });
         }
 
         // store in redis for future use
-        await redis.set("featured_products", JSON.stringify(isFeatRedisOrDb));
+        await redis.set("featured_products", JSON.stringify(featuredProducts), "EX", 3600); // Cache for 1 hour
 
-		res.json(isFeatRedisOrDb);
+        res.json(featuredProducts);
     } catch (error) {
         console.log("Error in getFeaturedProducts controller", error.message);
-		res.status(500).json({ message: "Server error", error: error.message });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 }
+
+
 
 export const createProduct = async (req, res) => {
     try {
-        const { name, description, price, image, category, isFeatured } = req.body;
-        let cloudinaryRes = null;
-        
-        if (image) {
-            cloudinaryRes = cloudinary.uploader.upload(image, {folder: "products"});
-        }
-        const product = await Product.create({
-            name,
-            description,
-            price,
-            image: cloudinaryRes?.secure_url ? cloudinaryRes.secure_url: "",
-            category
-        });
-        res.status(201).json(product);
-    } catch (error) {
-        console.log("Error in the product_controller", error.message);
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
+      const { name, description, price, category, isFeatured } = req.body;
+    //   const imageUrl = await uploadImage(req.file.path); // This assumes you are using multer for file uploads
+    let imageUrl = '';
 
-}
+    if (req.file) {
+      // If an image file is provided, upload it to Cloudinary
+      imageUrl = await uploadImage(req.file.path);
+    }
+      const product = new Product({
+        name,
+        description,
+        price,
+        image: imageUrl,
+        category,
+        isFeatured
+      });
+  
+      await product.save();
+      res.status(201).json(product);
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  };
+
 
 export const deleteProduct = async (req, res) => {
     try {
@@ -148,3 +156,19 @@ async function updateFeaturedProductsCache() {
 		console.log("error in update cache function");
 	}
 }
+
+export const getProductById = async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const product = await Product.findById(productId);
+
+        if (!product) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+
+        res.json(product);
+    } catch (error) {
+        console.log("Error in getProductById controller", error.message);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};

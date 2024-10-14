@@ -5,4 +5,5 @@
 
 # Ignore other files and directories
 .DS_Store
-.env
+/backend/.env
+/frontend/.env
