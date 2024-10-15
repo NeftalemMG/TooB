@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from '../api/axios';
 import Button from '../components/ui/Button';
+import { setToken, setUser } from '../utils/auth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -15,7 +16,9 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axios.post('/auth/login', { email, password });
-      localStorage.setItem('token', response.data.token);
+      const { token, user } = response.data;
+      setToken(token);
+      setUser(user);
       navigate(location.state?.from || '/');
     } catch (error) {
       setError('Invalid email or password');

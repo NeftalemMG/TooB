@@ -6,6 +6,8 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay, EffectFade } from 'swiper/modules';
 import axios from '../api/axios';
 import Button from '../components/ui/Button';
+import { isAuthenticated, getUser } from '../utils/auth';
+import TOOBLogo from '../components/TOOBLogo';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -15,12 +17,13 @@ import 'swiper/css/effect-fade';
 import MKTNG4 from '../images/MKTNG 4.jpg';
 import MKTNG5 from '../images/MKTNG 5.jpg';
 import MKTNG6 from '../images/MKTNG 6.jpg';
-import CatchScene from '../images/CatchScene.jpg';
+import MKTNG9 from '../images/MKTNG 9.jpeg';
+import CatchScene from '../images/CatchScene.jpeg';
 import toobLogo from '../images/toobLogo.png';
 
 const slides = [
-  { image: MKTNG4, title: "Nomadic Elegance", subtitle: "Where heritage meets the horizon" },
-  { image: MKTNG5, title: "Timeless Style", subtitle: "Crafted for the modern wanderer" },
+  { image: MKTNG5, title: "Nomadic Elegance", subtitle: "Where heritage meets the horizon" },
+  { image: MKTNG9, title: "Timeless Style", subtitle: "Crafted for the modern wanderer" },
   { image: CatchScene, title: "Sustainable Luxury", subtitle: "Ethical fashion for a better world" },
 ];
 
@@ -29,21 +32,27 @@ const Home = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-
   useEffect(() => {
-    const fetchFeaturedProducts = async () => {
-      try {
-        const response = await axios.get('/products/featured');
-        setFeaturedProducts(response.data);
-      } catch (error) {
-        console.error('Error fetching featured products:', error);
-      }
-    };
-
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
     fetchFeaturedProducts();
+    if (isAuthenticated()) {
+      setUser(getUser());
+    }
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const fetchFeaturedProducts = async () => {
+    try {
+      const response = await axios.get('/products/featured');
+      setFeaturedProducts(response.data);
+    } catch (error) {
+      console.error('Error fetching featured products:', error);
+    }
+  };
 
   const handleNavigation = (path) => {
     navigate(path);
@@ -61,32 +70,46 @@ const Home = () => {
     <div className="min-h-screen bg-sand-50 text-earth-900">
 
 
-<header className="bg-earth-900 text-sand-100 py-4 fixed top-0 left-0 right-0 z-50">
-  <div className="container mx-auto px-4">
-    <div className="flex justify-between items-center">
-      <Link to="/" className="text-2xl font-bold">TOOB</Link>
-      <nav className="hidden lg:flex space-x-8">
-        {['Collections', 'Our Story', 'Atelier', 'Sustainability'].map((item) => (
-          <Link
-            key={item}
-            to={`/${item.toLowerCase().replace(' ', '-')}`}
-            className="text-sand-100 hover:text-terracotta-300 transition-colors duration-300"
-          >
-            {item}
-          </Link>
-        ))}
-      </nav>
-      <div className="flex items-center space-x-4">
-        <button onClick={() => setSearchOpen(true)} className="p-2 rounded-full bg-sand-100 text-earth-900 hover:bg-terracotta-500 hover:text-sand-100 transition-colors duration-300">
-          <Search size={20} />
-        </button>
-        <Link to="/cart" className="p-2 rounded-full bg-sand-100 text-earth-900 hover:bg-terracotta-500 hover:text-sand-100 transition-colors duration-300">
-          <ShoppingBag size={20} />
-        </Link>
-      </div>
-    </div>
-  </div>
-</header>
+<header className="bg-white shadow-md py-4 fixed top-0 left-0 right-0 z-50">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center">
+            <Link to="/" className="flex items-center">
+              <TOOBLogo width={120} height={48} />
+            </Link>
+            <nav className="hidden lg:flex space-x-8">
+              {['Collections', 'Our Story', 'Atelier', 'Sustainability'].map((item) => (
+                <Link
+                  key={item}
+                  to={`/${item.toLowerCase().replace(' ', '-')}`}
+                  className="text-earth-900 hover:text-terracotta-500 transition-colors duration-300 relative group"
+                >
+                  {item}
+                  <span className="absolute left-0 bottom-0 w-full h-0.5 bg-terracotta-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+                </Link>
+              ))}
+            </nav>
+            <div className="flex items-center space-x-4">
+              <button onClick={() => setSearchOpen(true)} className="p-2 text-earth-900 hover:text-terracotta-500 transition-colors duration-300">
+                <Search size={20} />
+              </button>
+              <Link to="/cart" className="p-2 text-earth-900 hover:text-terracotta-500 transition-colors duration-300">
+                <ShoppingBag size={20} />
+              </Link>
+              {user ? (
+                <div className="flex items-center">
+                  <User size={20} className="mr-2 text-earth-900" />
+                  <span className="text-earth-900 font-medium">{user.name}</span>
+                </div>
+              ) : (
+                <Link to="/login" className="p-2 text-earth-900 hover:text-terracotta-500 transition-colors duration-300">
+                  <User size={20} />
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
 
       <main>
 
@@ -235,12 +258,13 @@ const Home = () => {
         </section>
       </main>
 
+
       <footer className="bg-earth-900 text-sand-100 py-12">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="text-2xl font-bold mb-4">TOOB</h3>
-              <p className="mb-4">Nomadic luxury for the modern wanderer.</p>
+              <TOOBLogo width={120} height={48} />
+              <p className="mt-4 mb-4">Nomadic luxury for the modern wanderer.</p>
               <div className="flex space-x-4">
                 {['facebook', 'twitter', 'instagram'].map((social) => (
                   <a key={social} href={`https://${social}.com/toob`} target="_blank" rel="noopener noreferrer" className="text-sand-100 hover:text-terracotta-300 transition-colors duration-300">
@@ -249,21 +273,25 @@ const Home = () => {
                 ))}
               </div>
             </div>
-            {['Shop', 'About', 'Customer Care', 'Legal'].map((category, index) => (
-              <div key={index}>
-                <h3 className="text-xl font-semibold mb-4">{category}</h3>
-                <ul className="space-y-2">
-                  {['Collections', 'New Arrivals', 'Best Sellers', 'Sale'].map((link, linkIndex) => (
-                    <li key={linkIndex}>
-                      <a href="#" className="text-sand-300 hover:text-terracotta-300 transition-colors duration-300">{link}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Quick Links</h3>
+              <ul className="space-y-2">
+                {['Collections', 'Our Story', 'Atelier', 'Sustainability'].map((link) => (
+                  <li key={link}>
+                    <Link to={`/${link.toLowerCase().replace(' ', '-')}`} className="text-sand-300 hover:text-terracotta-300 transition-colors duration-300">{link}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Contact</h3>
+              <p>Bole Square, Addis Ababa</p>
+              <p>Email: info@toob.com</p>
+              <p>Phone: +251979126678 </p>
+            </div>
           </div>
-          <div className="border-t border-sand-800 mt-12 pt-8 text-center">
-            <p>&copy; 2024 TOOB Nomadic Luxury. All rights reserved.</p>
+          <div className="border-t border-sand-800 mt-8 pt-8 text-center">
+            <p>&copy; 2024 TOOB Habesha. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -367,7 +395,4 @@ const Home = () => {
 };
 
 export default Home;
-
-
-
 

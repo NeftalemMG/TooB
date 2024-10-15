@@ -15,6 +15,7 @@ import Checkout from './pages/Checkout';
 import OrderConfirmation from './pages/OrderConfirmation';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
+import Payment from './pages/Payment';
 // import ForgotPassword from './pages/ForgotPassword';
 // import ResetPassword from './pages/ResetPassword';
 
@@ -38,6 +39,7 @@ const App = () => {
             <Route path="/sustainability" element={<Sustainability />} />
             <Route path="/atelier" element={<Atelier />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/payment" element={<Payment />} />
             <Route path="/order-confirmation" element={<OrderConfirmation />} />
 
 
