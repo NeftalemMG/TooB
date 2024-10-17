@@ -1,174 +1,200 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, X, Plus, Minus, User, ArrowLeft } from 'lucide-react';
-import axios from '../api/axios';
-import { isAuthenticated, getUser } from '../utils/auth';
-import Button from '../components/ui/Button';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useCart } from '../contexts/CartContext';
+import { ShoppingBag, Minus, Plus, X, ChevronRight, Truck, Package } from 'lucide-react';
+import TOOBLogo from '../components/TOOBLogo';
 
 const Cart = () => {
-  const [cart, setCart] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
+  const { cartItems, removeFromCart, updateQuantity } = useCart();
+  const [total, setTotal] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchCart();
-    if (isAuthenticated()) {
-      setUser(getUser());
+    if (cartItems && cartItems.length > 0) {
+      const newTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      setTotal(newTotal);
+    } else {
+      setTotal(0);
     }
-  }, []);
+  }, [cartItems]);
 
-  const fetchCart = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('/cart');
-      setCart(response.data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch cart. Please try again.');
-      console.error('Error fetching cart:', err);
-    } finally {
-      setLoading(false);
-    }
+  const handleCheckout = () => {
+    navigate('/checkout');
   };
-
-  const updateQuantity = async (productId, newQuantity) => {
-    try {
-      await axios.put(`/cart/${productId}`, { quantity: newQuantity });
-      fetchCart();
-    } catch (err) {
-      setError('Failed to update quantity. Please try again.');
-      console.error('Error updating quantity:', err);
-    }
-  };
-
-  const removeFromCart = async (productId) => {
-    try {
-      await axios.delete(`/cart/${productId}`);
-      fetchCart();
-    } catch (err) {
-      setError('Failed to remove item. Please try again.');
-      console.error('Error removing item:', err);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-sand-50">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-earth-900"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-sand-50">
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
-          <p className="font-bold">Error</p>
-          <p>{error}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-sand-50">
-      <header className="bg-earth-900 text-sand-100 py-4">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold">TOOB</Link>
-          {user && (
-            <div className="flex items-center">
-              <User size={20} className="mr-2" />
-              <span>{user.name}</span>
-            </div>
-          )}
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100">
+      <header className="bg-white bg-opacity-80 backdrop-filter backdrop-blur-lg shadow-lg py-4 sticky top-0 z-50">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center">
+            <Link to="/" className="flex items-center">
+              <TOOBLogo width={120} height={48} />
+            </Link>
+            <nav className="hidden lg:flex space-x-8">
+              {['Collections', 'Our Story', 'Atelier', 'Sustainability'].map((item) => (
+                <Link
+                  key={item}
+                  to={`/${item.toLowerCase().replace(' ', '-')}`}
+                  className="text-gray-800 hover:text-indigo-600 transition-colors duration-300 relative group"
+                >
+                  <span className="relative z-10">{item}</span>
+                  <span className="absolute inset-x-0 bottom-0 h-1 bg-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+                </Link>
+              ))}
+            </nav>
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <Link to="/collections" className="text-earth-900 hover:text-terracotta-500 flex items-center">
-            <ArrowLeft size={20} className="mr-2" />
-            Continue Shopping
-          </Link>
-        </div>
-
-        <h1 className="text-4xl font-bold text-earth-900 mb-8">Your Cart</h1>
-
-        {cart.length === 0 ? (
-          <div className="text-center py-16">
-            <ShoppingBag size={64} className="mx-auto text-earth-400 mb-4" />
-            <h2 className="text-2xl font-bold text-earth-900 mb-4">Your cart is empty</h2>
-            <p className="text-earth-600 mb-8">Looks like you haven't added any items to your cart yet.</p>
-            <Link
-              to="/collections"
-              className="bg-terracotta-500 text-white px-6 py-3 rounded-full hover:bg-terracotta-600 transition-colors duration-300"
+      <main className="flex-grow container mx-auto px-4 py-12">
+        <motion.h1 
+          className="text-4xl font-bold mb-8 text-indigo-900"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Your Cart
+        </motion.h1>
+        <AnimatePresence>
+          {!cartItems || cartItems.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="text-center py-12"
             >
-              Explore Collections
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              {cart.map((item) => (
-                <div key={item._id} className="bg-white rounded-lg shadow-md p-6 mb-4 flex items-center">
-                  <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded-md mr-6" />
-                  <div className="flex-grow">
-                    <h3 className="text-lg font-semibold text-earth-900">{item.name}</h3>
-                    <p className="text-terracotta-500 font-bold">${item.price.toFixed(2)}</p>
-                    <div className="flex items-center mt-2">
-                      <button
-                        onClick={() => updateQuantity(item._id, Math.max(1, item.quantity - 1))}
-                        className="p-1 rounded-full bg-earth-200 text-earth-600 hover:bg-earth-300"
-                      >
-                        <Minus size={16} />
-                      </button>
-                      <span className="mx-4 text-earth-900">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                        className="p-1 rounded-full bg-earth-200 text-earth-600 hover:bg-earth-300"
-                      >
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removeFromCart(item._id)}
-                    className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-200"
+              <ShoppingBag className="w-24 h-24 mx-auto mb-4 text-indigo-300" />
+              <p className="text-xl text-gray-600">Your cart is empty.</p>
+              <Link to="/collections" className="mt-4 inline-block px-6 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors duration-300">
+                Start Shopping
+              </Link>
+            </motion.div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  {cartItems.map((item, index) => (
+                    <motion.div
+                      key={item._id}
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="mb-6 p-6 bg-white rounded-xl shadow-lg relative overflow-hidden"
+                    >
+                      <div className="flex items-center">
+                        <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded-lg mr-6" />
+                        <div>
+                          <h2 className="text-xl font-semibold text-indigo-900">{item.name}</h2>
+                          <p className="text-gray-600 mt-1">${item.price.toFixed(2)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center mt-4">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                          className="p-2 bg-indigo-100 rounded-full text-indigo-600 hover:bg-indigo-200 transition-colors duration-300"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </motion.button>
+                        <span className="mx-4 text-lg font-medium">{item.quantity}</span>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                          className="p-2 bg-indigo-100 rounded-full text-indigo-600 hover:bg-indigo-200 transition-colors duration-300"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => removeFromCart(item._id)}
+                          className="ml-auto p-2 bg-red-100 rounded-full text-red-500 hover:bg-red-200 transition-colors duration-300"
+                        >
+                          <X className="w-4 h-4" />
+                        </motion.button>
+                      </div>
+                      <motion.div
+                        className="absolute top-0 right-0 w-16 h-16 bg-indigo-200 rounded-bl-full"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+                <div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white p-6 rounded-xl shadow-lg sticky top-24"
                   >
-                    <X size={20} />
-                  </button>
+                    <h2 className="text-2xl font-bold text-indigo-900 mb-4">Order Summary</h2>
+                    <div className="flex justify-between mb-2">
+                      <span>Subtotal</span>
+                      <span>${total.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between mb-2">
+                      <span>Shipping</span>
+                      <span>Free</span>
+                    </div>
+                    <div className="border-t border-gray-200 my-4"></div>
+                    <div className="flex justify-between mb-4">
+                      <span className="text-xl font-bold">Total</span>
+                      <span className="text-xl font-bold">${total.toFixed(2)}</span>
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleCheckout}
+                      className="w-full px-8 py-3 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors duration-300 flex items-center justify-center"
+                    >
+                      Proceed to Checkout
+                      <ChevronRight className="ml-2 w-5 h-5" />
+                    </motion.button>
+                    <div className="mt-6 flex items-center justify-center text-gray-600">
+                      <Truck className="w-5 h-5 mr-2" />
+                      <span>Free shipping on all orders</span>
+                    </div>
+                  </motion.div>
                 </div>
-              ))}
-            </div>
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-bold text-earth-900 mb-4">Order Summary</h2>
-                <div className="flex justify-between mb-2">
-                  <span>Subtotal</span>
-                  <span>${cart.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between mb-2">
-                  <span>Shipping</span>
-                  <span>Calculated at checkout</span>
-                </div>
-                <div className="border-t border-earth-200 my-4"></div>
-                <div className="flex justify-between mb-4">
-                  <span className="font-bold">Total</span>
-                  <span className="font-bold">${cart.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)}</span>
-                </div>
-                <Button
-                  onClick={() => navigate('/checkout')}
-                  className="w-full bg-terracotta-500 text-white py-3 rounded-full hover:bg-terracotta-600 transition-colors duration-300"
-                >
-                  Proceed to Checkout
-                </Button>
               </div>
+              <motion.div 
+                className="mt-12 p-6 bg-indigo-50 rounded-xl shadow-lg"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <h2 className="text-2xl font-bold text-indigo-900 mb-4">Delivery Information</h2>
+                <div className="flex items-center mb-4">
+                  <Package className="w-6 h-6 text-indigo-600 mr-2" />
+                  <span>Your items will be carefully packaged to ensure safe delivery.</span>
+                </div>
+                <div className="flex items-center">
+                  <Truck className="w-6 h-6 text-indigo-600 mr-2" />
+                  <span>Expected delivery within 3-5 business days.</span>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </main>
+
+      <footer className="bg-indigo-900 text-white py-8 mt-auto">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-4 md:mb-0">
+              <TOOBLogo width={120} height={48} className="text-white" />
+            </div>
+            <div className="text-center md:text-right">
+              <p>&copy; 2024 TOOB Habesha. All rights reserved.</p>
             </div>
           </div>
-        )}
-      </main>
+        </div>
+      </footer>
     </div>
   );
 };

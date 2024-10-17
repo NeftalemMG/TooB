@@ -1,204 +1,303 @@
 import React, { useState, useEffect } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { useCart } from '../contexts/CartContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import Button from '../components/ui/Button';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from '../api/axios';
-import { ShoppingBag, CreditCard, Truck, ArrowLeft } from 'lucide-react';
+import TOOBLogo from '../components/TOOBLogo';
+import { CreditCard, Lock, CheckCircle, ShieldCheck, Truck } from 'lucide-react';
 
-const Checkout = () => {
-  const [cartItems, setCartItems] = useState([]);
-  const [address, setAddress] = useState({
-    street: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: '',
-  });
-  const [loading, setLoading] = useState(true);
+
+import visaImage from '../images/visa.png';
+import mastercardImage from '../images/mastercard.png';
+import amexImage from '../images/amex.png';
+import discoverImage from '../images/discover.png';
+
+const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+
+const CheckoutForm = ({ clientSecret, amount, orderId }) => {
+  const stripe = useStripe();
+  const elements = useElements();
   const [error, setError] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [succeeded, setSucceeded] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchCartItems();
-  }, []);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setProcessing(true);
 
-  const fetchCartItems = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('/cart');
-      setCartItems(response.data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching cart items:', error);
-      setError('Failed to load cart items. Please try again.');
-      setLoading(false);
+    if (!stripe || !elements) {
+      return;
+    }
+
+    const result = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: {
+        card: elements.getElement(CardElement),
+        billing_details: {
+          name: event.target.name.value,
+        },
+      },
+    });
+
+    if (result.error) {
+      setError(result.error.message);
+      setProcessing(false);
+    } else {
+      if (result.paymentIntent.status === 'succeeded') {
+        setError(null);
+        setProcessing(false);
+        setSucceeded(true);
+        navigate(`/order-confirmation?orderId=${orderId}`);
+      }
     }
   };
 
-  const handleAddressChange = (e) => {
-    setAddress({ ...address, [e.target.name]: e.target.value });
-  };
-
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    navigate('/payment', { state: { address, cartItems } });
-  };
-  
-  
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-sand-50">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-earth-900"></div>
+  return (
+    <form onSubmit={handleSubmit} className="mt-8">
+      <div className="mb-6">
+        <label htmlFor="name" className="block text-lg font-medium text-indigo-900 mb-2">Name on card</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          required
+          className="w-full border-2 border-indigo-200 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+        />
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-sand-50">
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
-          <p className="font-bold">Error</p>
-          <p>{error}</p>
+      <div className="bg-white p-6 rounded-xl shadow-lg mb-6">
+        <div className="flex items-center mb-4">
+          <CreditCard className="w-6 h-6 text-indigo-600 mr-2" />
+          <span className="text-lg font-medium text-indigo-900">Card Information</span>
         </div>
+        <CardElement 
+          options={{
+            style: {
+              base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                  color: '#aab7c4',
+                },
+              },
+              invalid: {
+                color: '#9e2146',
+              },
+            },
+          }}
+        />
       </div>
-    );
-  }
+      {error && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="text-red-500 mb-4"
+        >
+          {error}
+        </motion.div>
+      )}
+      {succeeded && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="text-green-500 mb-4 flex items-center"
+        >
+          <CheckCircle className="w-5 h-5 mr-2" />
+          Payment successful! Redirecting...
+        </motion.div>
+      )}
+      <motion.button
+        type="submit"
+        disabled={!stripe || processing || succeeded}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg text-lg font-medium hover:bg-indigo-700 transition duration-200 ease-in-out disabled:opacity-50 flex items-center justify-center"
+      >
+        {processing ? 'Processing...' : (
+          <>
+            <Lock className="w-5 h-5 mr-2" />
+            Pay ${amount.toFixed(2)}
+          </>
+        )}
+      </motion.button>
+    </form>
+  );
+};
+
+
+
+
+const Checkout = () => {
+  const [clientSecret, setClientSecret] = useState('');
+  const [orderId, setOrderId] = useState('');
+  const { cartItems } = useCart();
+  const [amount, setAmount] = useState(0);
+
+  useEffect(() => {
+    const fetchPaymentIntent = async () => {
+      try {
+        const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        setAmount(total);
+        const response = await axios.post('/payment/create-payment-intent', {
+          amount: total,
+          items: cartItems.map(item => ({
+            _id: item._id,
+            quantity: item.quantity,
+            price: item.price
+          }))
+        });
+        console.log('Payment intent response:', response.data);
+        setClientSecret(response.data.clientSecret);
+        setOrderId(response.data.orderId);
+      } catch (error) {
+        console.error('Error fetching payment intent:', error);
+      }
+    };
+  
+    if (cartItems.length > 0) {
+      fetchPaymentIntent();
+    }
+  }, [cartItems]);
+
+  const cardBrands = [
+    { name: 'Visa', image: visaImage },
+    { name: 'Mastercard', image: mastercardImage },
+    { name: 'American Express', image: amexImage },
+    { name: 'Discover', image: discoverImage },
+  ];
 
   return (
-    <div className="min-h-screen bg-sand-50 text-earth-900">
-      <header className="bg-earth-900 text-sand-100 py-4">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100">
+      <header className="bg-white bg-opacity-80 backdrop-filter backdrop-blur-lg shadow-lg py-4 sticky top-0 z-50">
         <div className="container mx-auto px-4">
-          <Link to="/" className="text-2xl font-bold">TOOB</Link>
+          <div className="flex justify-between items-center">
+            <Link to="/" className="flex items-center">
+              <TOOBLogo width={120} height={48} />
+            </Link>
+            <nav className="hidden lg:flex space-x-8">
+              {['Collections', 'Our Story', 'Atelier', 'Sustainability'].map((item) => (
+                <Link
+                  key={item}
+                  to={`/${item.toLowerCase().replace(' ', '-')}`}
+                  className="text-gray-800 hover:text-indigo-600 transition-colors duration-300 relative group"
+                >
+                  <span className="relative z-10">{item}</span>
+                  <span className="absolute inset-x-0 bottom-0 h-1 bg-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+                </Link>
+              ))}
+            </nav>
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <Link to="/cart" className="text-earth-900 hover:text-terracotta-500 flex items-center">
-            <ArrowLeft size={20} className="mr-2" />
-            Back to Cart
-          </Link>
-        </div>
-
-        <h1 className="text-4xl font-bold mb-8">Checkout</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <h2 className="text-2xl font-semibold mb-4 flex items-center">
-              <ShoppingBag className="mr-2" />
-              Order Summary
-            </h2>
-            <div className="bg-white rounded-lg shadow-md p-6">
+      <main className="flex-grow container mx-auto px-4 py-12">
+        <motion.h1 
+          className="text-4xl font-bold mb-8 text-indigo-900"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Checkout
+        </motion.h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <motion.div 
+              className="bg-white p-6 rounded-xl shadow-lg mb-6"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <h2 className="text-2xl font-bold text-indigo-900 mb-4">Order Summary</h2>
               {cartItems.map((item) => (
-                <div key={item._id} className="flex items-center mb-4 pb-4 border-b border-earth-200 last:border-b-0 last:pb-0 last:mb-0">
-                  <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-md mr-4" />
-                  <div className="flex-grow">
-                    <h3 className="font-semibold">{item.name}</h3>
-                    <p className="text-earth-600">Quantity: {item.quantity}</p>
+                <div key={item._id} className="flex items-center justify-between mb-4">
+                  <div className="flex items-center">
+                    <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg mr-4" />
+                    <div>
+                      <h3 className="font-semibold">{item.name}</h3>
+                      <p className="text-gray-600">Quantity: {item.quantity}</p>
+                    </div>
                   </div>
                   <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
-              <div className="mt-4 text-xl font-semibold flex justify-between">
-                <span>Total:</span>
-                <span>${cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)}</span>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <h2 className="text-2xl font-semibold mb-4 flex items-center">
-              <Truck className="mr-2" />
-              Shipping Address
-            </h2>
-            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
-              <div className="mb-4">
-                <label htmlFor="street" className="block mb-2 font-medium">Street Address</label>
-                <input
-                  type="text"
-                  id="street"
-                  name="street"
-                  value={address.street}
-                  onChange={handleAddressChange}
-                  required
-                  className="w-full p-2 border border-earth-300 rounded focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label htmlFor="city" className="block mb-2 font-medium">City</label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    value={address.city}
-                    onChange={handleAddressChange}
-                    required
-                    className="w-full p-2 border border-earth-300 rounded focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                  />
+              <div className="border-t border-gray-200 mt-4 pt-4">
+                <div className="flex justify-between">
+                  <span className="font-semibold">Total:</span>
+                  <span className="font-semibold">${amount.toFixed(2)}</span>
                 </div>
-                <div>
-                  <label htmlFor="state" className="block mb-2 font-medium">State</label>
-                  <input
-                    type="text"
-                    id="state"
-                    name="state"
-                    value={address.state}
-                    onChange={handleAddressChange}
-                    required
-                    className="w-full p-2 border border-earth-300 rounded focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                    />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label htmlFor="zipCode" className="block mb-2 font-medium">Zip Code</label>
-                      <input
-                        type="text"
-                        id="zipCode"
-                        name="zipCode"
-                        value={address.zipCode}
-                        onChange={handleAddressChange}
-                        required
-                        className="w-full p-2 border border-earth-300 rounded focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="country" className="block mb-2 font-medium">Country</label>
-                      <input
-                        type="text"
-                        id="country"
-                        name="country"
-                        value={address.country}
-                        onChange={handleAddressChange}
-                        required
-                        className="w-full p-2 border border-earth-300 rounded focus:outline-none focus:ring-2 focus:ring-terracotta-500"
-                      />
-                    </div>
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-terracotta-500 text-white py-3 rounded-full hover:bg-terracotta-600 transition-colors duration-300 flex items-center justify-center"
-                  >
-                    <CreditCard className="mr-2" />
-                    Proceed to Payment
-                  </Button>
-                </form>
-              </motion.div>
-            </div>
-          </main>
+              </div>
+            </motion.div>
+            <motion.div 
+              className="bg-white p-6 rounded-xl shadow-lg mb-6"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <h2 className="text-2xl font-bold text-indigo-900 mb-4">Accepted Cards</h2>
+              <div className="flex justify-around">
+                {cardBrands.map((card) => (
+                  <motion.img 
+                    key={card.name}
+                    src={card.image} 
+                    alt={card.name} 
+                    className="h-12"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </div>
+          <div>
+            <motion.div 
+              className="bg-white p-6 rounded-xl shadow-lg"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+            >
+              <h2 className="text-2xl font-bold text-indigo-900 mb-4">Payment Details</h2>
+              {clientSecret && (
+                <Elements stripe={stripePromise}>
+                  <CheckoutForm clientSecret={clientSecret} amount={amount} orderId={orderId} />
+                </Elements>
+              )}
+            </motion.div>
+          </div>
         </div>
-      );
-    };
-    
-    export default Checkout;
+        <motion.div 
+          className="mt-12 bg-white p-6 rounded-xl shadow-lg"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+        >
+          <h2 className="text-2xl font-bold text-indigo-900 mb-4">Secure Checkout</h2>
+          <div className="flex items-center mb-4">
+            <ShieldCheck className="w-6 h-6 text-green-500 mr-2" />
+            <span>Your payment information is encrypted and secure.</span>
+          </div>
+          <div className="flex items-center">
+            <Truck className="w-6 h-6 text-indigo-600 mr-2" />
+            <span>Free shipping on all orders over $100.</span>
+          </div>
+        </motion.div>
+      </main>
+
+      <footer className="bg-indigo-900 text-white py-8 mt-auto">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-4 md:mb-0">
+              <TOOBLogo width={120} height={48} className="text-white" />
+            </div>
+            <div className="text-center md:text-right">
+              <p>&copy; 2024 TOOB Habesha. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default Checkout;
+

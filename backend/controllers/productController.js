@@ -2,6 +2,7 @@ import { redis } from '../lib/redis.js';
 import Product from '../models/productModel.js';
 import uploadImage from '../utils/uploadImage.js';
 import cloudinary from '../lib/cloudinary.js';
+import mongoose from 'mongoose';
 
 
 export const getAllProducts = async (req, res) => {
@@ -157,18 +158,50 @@ async function updateFeaturedProductsCache() {
 	}
 }
 
+
 export const getProductById = async (req, res) => {
     try {
-        const productId = req.params.id;
-        const product = await Product.findById(productId);
-
-        if (!product) {
-            return res.status(404).json({ message: "Product not found" });
-        }
-
+      const { id } = req.params;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid product ID' });
+      }
+      const product = await Product.findById(id);
+      if (product) {
         res.json(product);
+      } else {
+        res.status(404).json({ message: 'Product not found' });
+      }
     } catch (error) {
-        console.log("Error in getProductById controller", error.message);
-        res.status(500).json({ message: "Server error", error: error.message });
+      console.error('Error in getProductById controller', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
     }
-};
+  };
+
+
+
+
+export const updateProduct = async (req, res) => {
+    try {
+      const product = await Product.findById(req.params.id);
+      if (product) {
+        Object.assign(product, req.body);
+        const updatedProduct = await product.save();
+        res.json(updatedProduct);
+      } else {
+        res.status(404).json({ message: 'Product not found' });
+      }
+    } catch (error) {
+      res.status(400).json({ message: 'Invalid product data', error: error.message });
+    }
+  };
+
+
+  export const getCategories = async (req, res) => {
+    try {
+      const categories = await Product.distinct('category');
+      res.json(categories);
+    } catch (error) {
+      console.error('Error in getCategories controller', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  };

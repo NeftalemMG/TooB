@@ -1,6 +1,7 @@
 import Product from "../models/productModel.js";
+import User from "../models/userModel.js";
 
-export const getCartProducts = async (req, res) => {
+export const getCartItems = async (req, res) => {
 	try {
 		const products = await Product.find({ _id: { $in: req.user.cartItems } });
 
@@ -54,7 +55,7 @@ export const removeAllFromCart = async (req, res) => {
 	}
 };
 
-export const updateQuantity = async (req, res) => {
+export const updateCartItem = async (req, res) => {
 	try {
 		const { id: productId } = req.params;
 		const { quantity } = req.body;
@@ -79,3 +80,28 @@ export const updateQuantity = async (req, res) => {
 		res.status(500).json({ message: "Server error", error: error.message });
 	}
 };
+
+
+export const removeFromCart = async (req, res) => {
+	try {
+	  const { id } = req.params;
+	  const user = await User.findById(req.user._id);
+  
+	  if (!user) {
+		return res.status(404).json({ message: "User not found" });
+	  }
+  
+	  const itemIndex = user.cartItems.findIndex(item => item.toString() === id);
+  
+	  if (itemIndex > -1) {
+		user.cartItems.splice(itemIndex, 1);
+		await user.save();
+		res.json({ message: "Item removed from cart successfully" });
+	  } else {
+		res.status(404).json({ message: "Item not found in cart" });
+	  }
+	} catch (error) {
+	  console.error("Error in removeFromCart controller", error);
+	  res.status(500).json({ message: "Failed to remove item from cart", error: error.message });
+	}
+  };

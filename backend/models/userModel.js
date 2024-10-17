@@ -60,7 +60,7 @@ userSchema.pre('save', async function (next) {
 });
 
 // methods added to each instance for comparing the password and hash
-userSchema.methods.comparePass = async function (password) {
+userSchema.methods.comparePassword = async function (password) {
     return bycrypt.compare(password, this.password);
 }
 

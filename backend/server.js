@@ -6,9 +6,11 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { router as authRoutes } from './routes/authRoute.js';
 import { router as productRoutes } from './routes/productRoute.js';
-import { router as cartRoutes } from './routes/cartRoutes.js';
+// import { router as cartRoutes } from './routes/cartRoutes.js';
 import { router as couponRoutes } from './routes/couponRoute.js';
-import { router as paymentRoutes } from './routes/paymentRoute.js';
+// import { router as paymentRoutes } from './routes/paymentRoute.js';
+import cartRoutes from './routes/cartRoutes.js';
+import paymentRoutes from './routes/paymentRoute.js';
 
 import { connectDB } from './lib/db.js';
 

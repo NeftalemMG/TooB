@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import toobLogo from '../images/toobLogo.png';
 
 import blueCoat from '../images/blueCoat.jpg';
-import brownShirt from '../images/brownShirt.jpg';
+// import brownShirt from '../images/brownShirt.jpg';
 import lightOrangePairs from '../images/lightOrangePairs.jpg';
 import pinkOnPink from '../images/pinkOnPink.jpg';
 
@@ -23,7 +23,7 @@ const Home = () => {
 
   const products = [
     { id: 1, name: 'Blue Coat', price: 299.99, image: blueCoat, category: 'outerwear' },
-    { id: 2, name: 'Brown Shirt', price: 89.99, image: brownShirt, category: 'tops' },
+    // { id: 2, name: 'Brown Shirt', price: 89.99, image: brownShirt, category: 'tops' },
     { id: 3, name: 'Light Orange Pairs', price: 399.99, image: lightOrangePairs, category: 'sets' },
     { id: 4, name: 'Pink on Pink', price: 249.99, image: pinkOnPink, category: 'sets' },
   ];
