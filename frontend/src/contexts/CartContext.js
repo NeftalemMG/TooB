@@ -8,17 +8,15 @@ export const useCart = () => useContext(CartContext);
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState(() => {
     const savedCart = localStorage.getItem('cart');
-    console.log('Initial cart from localStorage:', savedCart); // Debug log
     return savedCart ? JSON.parse(savedCart) : [];
   });
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log('Cart updated, saving to localStorage:', cartItems); // Debug log
     localStorage.setItem('cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
   const addToCart = async (product) => {
-    console.log('Adding to cart:', product); // Debug log
     try {
       const existingItem = cartItems.find(item => item._id === product._id);
       if (existingItem) {
@@ -28,23 +26,24 @@ export const CartProvider = ({ children }) => {
       } else {
         setCartItems(prevItems => [...prevItems, { ...product, quantity: 1 }]);
       }
-      console.log('Cart after adding:', cartItems); // Debug log
+      setError(null);
     } catch (error) {
       console.error('Error adding item to cart:', error);
+      setError('Failed to add item to cart');
     }
   };
 
   const removeFromCart = async (productId) => {
-    console.log('Removing from cart:', productId); // Debug log
     try {
       setCartItems(prevItems => prevItems.filter(item => item._id !== productId));
+      setError(null);
     } catch (error) {
       console.error('Error removing item from cart:', error);
+      setError('Failed to remove item from cart');
     }
   };
 
   const updateQuantity = async (productId, newQuantity) => {
-    console.log('Updating quantity:', productId, newQuantity); // Debug log
     try {
       if (newQuantity === 0) {
         removeFromCart(productId);
@@ -53,15 +52,20 @@ export const CartProvider = ({ children }) => {
           item._id === productId ? { ...item, quantity: newQuantity } : item
         ));
       }
+      setError(null);
     } catch (error) {
       console.error('Error updating item quantity:', error);
+      setError('Failed to update item quantity');
     }
   };
 
-  console.log('Current cart state:', cartItems); // Debug log
+  const clearCart = () => {
+    setCartItems([]);
+    localStorage.removeItem('cart');
+  };
 
   return (
-    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQuantity }}>
+    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQuantity, clearCart, error, setError }}>
       {children}
     </CartContext.Provider>
   );

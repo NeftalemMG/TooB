@@ -5,23 +5,29 @@ import User from '../models/userModel.js';
 
 export const authenticate = async (req, res, next) => {
   try {
-    const token = req.cookies.jwt;
+      // Get token from cookie or authorization header
+      const token = req.cookies.jwt || req.headers.authorization?.split(' ')[1];
 
-    if (!token) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
+      if (!token) {
+          return res.status(401).json({ message: 'Authentication required' });
+      }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Get user from database
+      const user = await User.findById(decoded.id).select('-password');
+      
+      if (!user) {
+          return res.status(401).json({ message: 'User not found' });
+      }
 
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
-
-    req.user = user;
-    next();
+      // Attach user to request object
+      req.user = user;
+      next();
   } catch (error) {
-    res.status(401).json({ message: 'Invalid or expired token' });
+      console.error('Authentication error:', error);
+      res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 
@@ -35,7 +41,7 @@ export const adminRoute = (req, res, next) => {
   }
 };
 
-// If you're using protectRoute as well, make sure it's defined and exported:
+
 export const protectRoute = (req, res, next) => {
   if (req.user) {
     next();

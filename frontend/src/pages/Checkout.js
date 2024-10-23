@@ -169,8 +169,8 @@ const Checkout = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100">
-      <header className="bg-white bg-opacity-80 backdrop-filter backdrop-blur-lg shadow-lg py-4 sticky top-0 z-50">
-        <div className="container mx-auto px-4">
+      <header className="bg-white bg-opacity-80 backdrop-filter backdrop-blur-lg shadow-lg py-4 md:py-4 sticky top-0 z-50">
+        <div className="container mx-auto px-2 md:px-2 ">
           <div className="flex justify-between items-center">
             <Link to="/" className="flex items-center">
               <TOOBLogo width={120} height={48} />
@@ -191,9 +191,9 @@ const Checkout = () => {
         </div>
       </header>
 
-      <main className="flex-grow container mx-auto px-4 py-12">
+      <main className="flex-grow container mx-auto px-2 md:px-4 py-6 md:py-12">
         <motion.h1 
-          className="text-4xl font-bold mb-8 text-indigo-900"
+          className="text-2xl md:text-4xl font-bold mb-4 md:mb-8 text-indigo-900"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}

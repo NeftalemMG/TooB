@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import axios from '../api/axios';
+import { AuthContext } from '../contexts/AuthContext';
 import Button from '../components/ui/Button';
-import { setToken, setUser } from '../utils/auth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -11,14 +10,12 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('/auth/login', { email, password });
-      const { token, user } = response.data;
-      setToken(token);
-      setUser(user);
+      await login(email, password);
       navigate(location.state?.from || '/');
     } catch (error) {
       setError('Invalid email or password');

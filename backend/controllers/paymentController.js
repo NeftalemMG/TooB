@@ -1,44 +1,38 @@
-import Stripe from 'stripe';
-import dotenv from 'dotenv';
+import { stripe } from '../lib/stripe.js';
 import Order from '../models/orderModel.js';
-
-dotenv.config();
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const createPaymentIntent = async (req, res) => {
   try {
     const { amount, items } = req.body;
 
-    // Create an order
+    console.log('Received items:', items); // Add this log
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Stripe expects the amount in cents
+      currency: 'usd',
+    });
+
     const order = new Order({
       user: req.user._id,
       products: items.map(item => ({
-        product: item._id,
+        product: item._id, // Assuming item._id is the product ID
         quantity: item.quantity,
         price: item.price
       })),
       totalAmount: amount,
-      stripeSessionId: '' // You can update this after creating the session
-    });
-    await order.save();
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
-      currency: 'usd',
-      metadata: { orderId: order._id.toString() }
+      stripeSessionId: paymentIntent.client_secret,
     });
 
-    // Update the order with the Stripe session ID
-    order.stripeSessionId = paymentIntent.id;
+    console.log('Created order:', order); // Add this log
+
     await order.save();
 
-    res.status(200).json({
+    res.json({
       clientSecret: paymentIntent.client_secret,
-      orderId: order._id.toString()
+      orderId: order._id,
     });
   } catch (error) {
     console.error('Error creating payment intent:', error);
-    res.status(500).json({ error: 'Failed to create payment intent', details: error.message });
+    res.status(500).json({ message: 'Error creating payment intent', error: error.message });
   }
 };

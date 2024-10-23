@@ -63,41 +63,42 @@ export const signup = async(req, res) => {
     
 }
 
-
-
 export const login = async (req, res) => {
-    const { email, password } = req.body;
-  
-    try {
-      const user = await User.findOne({ email });
-      if (user && await user.comparePassword(password)) {
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-          expiresIn: '1d'
-        });
-  
-        // Store token in Redis
-        await redis.set(`auth_${user._id}`, token, 'EX', 24 * 60 * 60); // Expires in 1 day
-  
-        res.cookie('jwt', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: 24 * 60 * 60 * 1000 // 1 day
-        });
-  
-        res.json({
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (user && await user.comparePassword(password)) {
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        expiresIn: '1d'
+      });
+
+      // Store token in Redis
+      await redis.set(`auth_${user._id}`, token, 'EX', 24 * 60 * 60);
+
+      res.cookie('jwt', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000
+      });
+
+      res.json({
+        user: {
           _id: user._id,
           name: user.name,
           email: user.email,
-          token // Send token to client
-        });
-      } else {
-        res.status(401).json({ message: 'Invalid email or password' });
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+          role: user.role
+        },
+        token
+      });
+    } else {
+      res.status(401).json({ message: 'Invalid email or password' });
     }
-  };
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
 
 
 export const logout = async (req, res) => {
@@ -143,13 +144,30 @@ export const refreshToken = async(req, res) => {
 }
 
 
-// implement getprofile
-// export const getprofile = async(req, res) => {
-//     try {
-//         const { email } = req.body;
-//         const user = await User.findOne({ email });
+export const getMe = async (req, res) => {
+  try {
+    const token = req.cookies.jwt || req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
 
-//     } catch (error) {
-        
-//     }
-// }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    });
+  } catch (error) {
+    console.error('Get me error:', error);
+    res.status(401).json({ message: 'Invalid token' });
+  }
+};
+

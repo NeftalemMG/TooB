@@ -11,6 +11,7 @@ import { router as couponRoutes } from './routes/couponRoute.js';
 // import { router as paymentRoutes } from './routes/paymentRoute.js';
 import cartRoutes from './routes/cartRoutes.js';
 import paymentRoutes from './routes/paymentRoute.js';
+import orderRoutes from './routes/orderRoute.js';
 
 import { connectDB } from './lib/db.js';
 
@@ -30,6 +31,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/coupon', couponRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/orders', orderRoutes);
 
 app.listen(port, () => {
     console.log(`Server listening on port http://localhost:${port}`);
