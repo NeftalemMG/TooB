@@ -52,3 +52,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 
 Experience the fusion of tradition and modernity with TOOB - Where Habesha Heritage Meets Luxury Fashion!
+
+Authors:
+    Neftalem Mussie     nhagos2000@gmail.com
+    Tomas Teclehaimanot 3thomas225@gmail.com
