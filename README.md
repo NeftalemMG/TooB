@@ -18,7 +18,7 @@ TOOB is a cutting-edge e-commerce platform that celebrates Habesha heritage thro
 - Node.js (v14 or later)
 - MongoDB
 - Stripe account
-- OAuth credentials (Google, Facebook, etc.)
+- JWT authentication
 
 ### Installation
 
