@@ -1,14 +1,15 @@
 # TOOB - Luxury Habesha Fashion E-commerce Platform
 
-TOOB is a cutting-edge e-commerce platform that celebrates Habesha heritage through contemporary luxury fashion. Our platform offers a seamless shopping experience, showcasing exquisite clothing and accessories that blend traditional Ethiopian and Eritrean designs with modern aesthetics.
+TOOB is an e-commerce platform that celebrates Habesha heritage through contemporary luxury fashion. Our platform offers a seamless shopping experience, showcasing exquisite clothing and accessories that blend traditional Ethiopian and Eritrean designs with modern aesthetics.
+
+You can check the deployed site at: https://toob-ruddy.vercel.app/
 
 ## 🌟 Features
 
 - 🛍️ Curated collections of luxury Habesha-inspired fashion
-- 🔒 Secure user authentication (including OAuth options)
+- 🔒 Secure user authentication
 - 💳 Smooth checkout process with Stripe integration
 - 🎨 Responsive and intuitive user interface
-- 🌍 Multi-language support
 - ♻️ Sustainability initiatives highlighted
 
 ## 🚀 Getting Started
@@ -25,7 +26,7 @@ TOOB is a cutting-edge e-commerce platform that celebrates Habesha heritage thro
 Clone the repository:
 
 
-git clone https://github.com/your-username/toob-fashion.git
+git clone https://github.com/NeftalemMG/toob-fashion.git
 cd toob-fashion
 
 
@@ -38,10 +39,7 @@ Node.js - Backend runtime
 Express - Backend framework
 MongoDB - Database
 Stripe - Payment processing
-Passport - Authentication middleware
 
-## 🤝 Contributing
-We welcome contributions! Please see our Contributing Guide for more details.
 
 ## 📜 License
 This project is licensed under the MIT License - see the LICENSE file for details.
